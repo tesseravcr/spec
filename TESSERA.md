@@ -1,6 +1,6 @@
 # Tessera
 
-In ancient Rome, a *tessera hospitalis* was a tile broken in half between two strangers - a host and a guest. Each kept one piece. Years later, generations later, when their descendants met, they matched the halves. No authority verified the bond. No institution recorded it. The object itself was the proof. A self-verifying token of trust between people who might never meet again.
+In ancient Rome.. a tessera hospitalis was a tile broken in half between two strangers - a host and a guest. Each kept one piece. Years later, generations later, when their descendants met, they matched the halves. No authority verified the bond. No institution recorded it. The object itself was the proof. A self-verifying token of trust between people who might never meet again.
 
 The other meaning is older. A tessera is the smallest tile in a mosaic. A chip of stone. It means nothing alone. Composed with others, it forms a picture that no individual tile contains and no single hand designed.
 
