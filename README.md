@@ -10,7 +10,6 @@ This directory contains the canonical protocol definition. It is implementation-
 |---|---|
 | [VCR-SPEC.md](VCR-SPEC.md) | Formal protocol specification. Receipt schema, canonical serialisation, verification procedure, settlement, transfer, transparency logs, trust computation. A developer should be able to build a conformant implementation from this document alone. |
 | [WHITEPAPER.md](WHITEPAPER.md) | Vision and motivation. Why the VCR exists, what problem it solves, how it relates to existing systems, security analysis, incentive analysis. |
-| [GAME-THEORY.md](GAME-THEORY.md) | Incentive analysis and sybil resistance. Formal derivation of honest attribution dominance. Simulation evidence from 300-round adversarial stress test with 5 attack strategies. |
 | [TEST-VECTORS.json](TEST-VECTORS.json) | Reference test cases. Known inputs with expected canonical bytes, hashes, signatures, and royalty cascade outputs. Use these to verify that an implementation is conformant. |
 
 ## Conformance
