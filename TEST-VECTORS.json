@@ -360,6 +360,51 @@
           "property": "cryptographically_impossible"
         }
       }
+    },
+    "receipt_with_extensions": {
+      "description": "A root receipt with two extensions populated. Exercises the non-empty extensions list serialisation path.",
+      "inputs": {
+        "schema_version": 1,
+        "model_id": "0000000000000000000000000000000000000000000000000000000000000000",
+        "verification_key_id": "0000000000000000000000000000000000000000000000000000000000000000",
+        "input_hash": "5132d5f8b0803339715fbe0850cdf2acf99febef5150ea2c7fb167361eb92bf6",
+        "output_hash": "a8563fef94dc94fde880d43e704fa0e0a6acf1faa230a4a134aaaea39777da7f",
+        "proof": "ZXh0LXByb29m",
+        "public_inputs": "",
+        "proving_backend": "ezkl-halo2",
+        "timestamp": 1714500000,
+        "parent_receipts": [],
+        "provenance_depth": 0,
+        "provider": "f9d7174a7794c538789d7d877e7bb6f3ddeabc2359249b1a3a449614c10aebc3",
+        "original_price": 1500,
+        "currency": "USD-cents",
+        "royalty_terms": {
+          "provider_royalty": 500,
+          "parent_royalty": 300,
+          "cascade": true
+        },
+        "signature_scheme": "ed25519",
+        "extensions": [
+          {
+            "type": "metadata",
+            "data": "YWdlbnQtdjEuMi4w"
+          },
+          {
+            "type": "capability",
+            "data": "dGV4dC1nZW5lcmF0aW9u"
+          }
+        ]
+      },
+      "expected": {
+        "canonical_bytes_hex": "000000020001000000200000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000205132d5f8b0803339715fbe0850cdf2acf99febef5150ea2c7fb167361eb92bf600000020a8563fef94dc94fde880d43e704fa0e0a6acf1faa230a4a134aaaea39777da7f000000096578742d70726f6f66000000000000000a657a6b6c2d68616c6f320000000800000000663131a00000000000000002000000000020f9d7174a7794c538789d7d877e7bb6f3ddeabc2359249b1a3a449614c10aebc30000000800000000000005dc000000095553442d63656e74730000000201f400000002012c0000000101000000076564323535313900000002000000086d657461646174610000000c6167656e742d76312e322e300000000a6361706162696c6974790000000f746578742d67656e65726174696f6e",
+        "canonical_bytes_length": 357,
+        "receipt_id": "295e3b492f2bab536c018d26605a3985e8d076351168f00266d650fee072b246",
+        "signature": "TPyyzQoDMha+rJfZ5PTdYb4l7hRxkzTSP83NBCsHL79FO+8grF0h/SJxWRJQKlFi9BFEXHq/HPXLnywGK5SIAg==",
+        "signature_valid": true,
+        "extension_0_canonical_hex": "000000086d657461646174610000000c6167656e742d76312e322e30",
+        "extension_1_canonical_hex": "0000000a6361706162696c6974790000000f746578742d67656e65726174696f6e",
+        "note": "Extensions add 46 bytes to canonical form vs the equivalent receipt with empty extensions list. The receipt_id differs from an otherwise identical receipt without extensions."
+      }
     }
   }
 }
