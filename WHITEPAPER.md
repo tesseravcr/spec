@@ -306,7 +306,7 @@ prove(artifacts, input_data) -> (proof_bytes, output_data)
 verify(artifacts, proof_bytes) -> bool
 ```
 
-Swapping the proving backend means implementing those two functions. Nothing else changes. ZK proofs give mathematical certainty but are limited to small deterministic models today. TEE attestation gives hardware-backed verification that works with any model, including LLMs. The implementation demonstrates both, producing interchangeable VCRs through the same protocol.
+Swapping the proving backend means implementing those two functions. Nothing else changes. ZK proofs give mathematical certainty but are limited to small deterministic models today. TEE attestation gives hardware-backed verification that works with any model, including LLMs. The implementation demonstrates both, producing interchangeable VCRs through the same protocol. Note that these backends carry different trust assumptions — ZK proofs are mathematically unforgeable while TEE attestations depend on hardware vendor PKI (see Spec Section 7.4).
 
 ---
 
