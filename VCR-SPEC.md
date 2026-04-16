@@ -433,6 +433,31 @@ Implementing a new backend requires:
 3. An implementation of `verify()` that validates proof bytes against public inputs.
 4. Nothing else changes. The receipt schema, serialisation, settlement, transfer, and trust layers are all backend-agnostic.
 
+### 7.4 Backend Security Models
+
+Different proving backends provide different security guarantees:
+
+- **ZK proofs** (e.g. Halo2) provide **mathematical soundness**. The proof is unforgeable given the hardness assumptions of the underlying cryptography. Verification requires only the proof, public inputs, and verification key. No trust in any hardware or third party is needed.
+
+- **TEE attestations** (e.g. AWS Nitro) provide **hardware-rooted trust**. The attestation is trustworthy given the integrity of the enclave hardware and the manufacturer's certificate chain. Verification depends on trusting the hardware vendor's PKI (e.g. the AWS Nitro Attestation root CA).
+
+The protocol treats all proving backends uniformly at the schema and verification layers. A receipt with `proving_backend = "ezkl-halo2"` and a receipt with `proving_backend = "tee-nitro-v1"` have identical structure, identical serialisation, and identical transfer mechanics.
+
+However, the underlying trust assumptions differ. Verifiers SHOULD consider the security model of `proving_backend` when making trust decisions (e.g. when computing settlement terms per Section 12.6). The protocol does not prescribe how to weight different backends — this is a verifier-local policy decision.
+
+### 7.5 Verification Key Retrieval
+
+Proof verification (Section 6.3) requires the actual verification key, not just its hash. The receipt carries `verification_key_id = H(verification_key_bytes)` but not the key itself.
+
+Implementations MUST be able to retrieve verification keys by `verification_key_id` to complete proof verification. This specification does not mandate a distribution mechanism. Conformant options include:
+
+- **Content-addressable storage.** The key's hash is its address. Any store that maps `H(key) → key` suffices.
+- **Provider-hosted endpoints.** The operator publishes keys at a known URL, retrievable by `verification_key_id`.
+- **Transparency-log-backed registries.** Keys are published to append-only logs, providing auditability and preventing silent key rotation.
+- **Out-of-band exchange.** Buyer and provider agree on key delivery as part of the settlement protocol.
+
+If a verifier cannot retrieve the verification key for a given `verification_key_id`, proof verification (Section 6.3) cannot be completed. The verifier SHOULD treat this as a verification failure unless they have independent reason to trust the receipt.
+
 ---
 
 ## 8. Provenance DAG
