@@ -689,24 +689,220 @@ for (sibling, direction) in path:
 return current == root
 ```
 
-### 11.3 Log Network
+### 11.3 Log Network Protocol
 
-Multiple independent operators run transparency logs. A transfer is submitted to all logs and considered confirmed when accepted by a threshold (e.g. 3-of-5).
+Multiple independent operators run transparency logs. This section defines the protocol by which logs discover each other, accept transfers, produce witnessed checkpoints, and enable new logs to join the network.
 
-### 11.4 Double-Spend Detection
+#### 11.3.1 Participants
+
+Three roles exist in the network:
+
+- **Submitter.** An agent submitting a transfer record. Submitters are not nodes — they are clients. A submitter sends a signed transfer to one or more logs and collects inclusion proofs in return.
+- **Log operator.** Runs a transparency log — an append-only Merkle tree of transfer records with a persistent identity (Ed25519 keypair). A log operator accepts submissions, appends entries, signs checkpoints, and participates in witnessing.
+- **Verifier.** Any party that queries logs to check ownership or verify inclusion proofs. A verifier does not need to run a log. Verification is stateless.
+
+#### 11.3.2 Log Identity
+
+Each log operator has a long-lived Ed25519 keypair. The public key is the log's identity. The operator publishes:
+
+```
+operator_key:  bytes32     — Ed25519 public key
+log_url:       string      — base URL (e.g. https://log1.example.org)
+```
+
+#### 11.3.3 Bootstrap and Peer Discovery
+
+The network uses static bootstrap with optional peer exchange.
+
+**Bootstrap list.** A new log ships with a hardcoded list of bootstrap log URLs. The bootstrap list is a configuration parameter, not a protocol constant. Reference deployments include the seed log URLs.
+
+**Peer exchange.** A log MAY expose its known peer list. A new log queries bootstrap peers for their peer lists and merges them. There is no DHT, no gossip protocol, no automatic discovery. Peer lists are advisory — a log operator chooses which peers to witness with.
+
+**Joining the network.** A new log operator:
+1. Generates an Ed25519 keypair.
+2. Configures bootstrap peers.
+3. Starts accepting submissions. No registration or permission is required.
+4. Begins requesting witness signatures from peers (Section 11.3.7).
+5. Other logs add the new log to their peer lists at their discretion.
+
+A log with zero peers is fully functional for local use. Witnessing is an additive trust property, not a prerequisite for operation.
+
+#### 11.3.4 Messages
+
+The protocol defines five message types. All messages are JSON-encoded for transport (Section 15). All messages are request-response over HTTP.
+
+**1. Submit (submitter → log)**
+
+A submitter sends a signed transfer record to a log for inclusion.
+
+Request:
+```
+{
+  "receipt_id":        "hex64",
+  "from_key":          "hex64",
+  "to_key":            "hex64",
+  "price":             uint64,
+  "currency":          "string",
+  "timestamp":         uint64,
+  "royalties_paid":    [{"recipient": "hex64", "amount": uint64, "receipt_id": "hex64"}],
+  "seller_signature":  "hex128",
+  "canonical_bytes":   "hex"
+}
+```
+
+The log independently reconstructs `canonical_bytes` from the submitted fields using the canonical serialisation defined in Section 10.3. If the reconstructed bytes do not match the submitted `canonical_bytes`, the submission is rejected. This prevents the submitter from getting an inclusion proof for data the log cannot independently verify.
+
+Response (success):
+```
+{
+  "index":          uint64,
+  "leaf_hash":      "hex64",
+  "root":           "hex64",
+  "log_size":       uint64,
+  "log_timestamp":  uint64,
+  "checkpoint":     Checkpoint
+}
+```
+
+The log MUST verify the `seller_signature` against `from_key` over `transfer_hash` (Section 10.3) before accepting.
+
+**2. Query proof (verifier → log)**
+
+A verifier requests an inclusion proof for a specific log entry.
+
+```
+GET /v1/proof/{index}
+→ InclusionProof (Section 11.2)
+```
+
+**3. Query ownership (verifier → log)**
+
+A verifier requests the current owner and transfer history for a receipt.
+
+```
+GET /v1/receipt/{receipt_id}
+→ { "owner": "hex64", "transfers": [...], "latest_proof": InclusionProof }
+```
+
+**4. Checkpoint (log → anyone)**
+
+A log publishes its latest signed checkpoint.
+
+```
+GET /v1/checkpoint
+→ { "root": "hex64", "log_size": uint64, "timestamp": uint64,
+     "operator_signature": "hex128", "witnesses": [...] }
+```
+
+**5. Witness request (log → peer log)**
+
+A log sends its checkpoint to a peer for countersigning. See Section 11.3.7.
+
+#### 11.3.5 Submission Flow
+
+When a transfer occurs between two agents:
+
+1. The seller constructs a `TransferRecord`, signs it, and computes `canonical_bytes`.
+2. The seller (or buyer, or both) submits the signed transfer to one or more logs.
+3. Each log validates the submission (Section 11.3.6), appends the entry, and returns an inclusion proof with a signed checkpoint.
+4. The submitter collects inclusion proofs. The transfer is considered confirmed at the submitter's chosen threshold (Section 11.3.10).
+
+The submitter decides which logs to submit to and how many confirmations to require. The protocol does not mandate a specific set of logs. A submitter that submits to only one log accepts the trust properties of that single log.
+
+#### 11.3.6 Log Validation Rules
+
+Before appending an entry, a log MUST perform these checks in order:
+
+1. **Signature verification.** Verify `seller_signature` against `from_key` over `transfer_hash`. Reject if invalid.
+2. **Canonical reconstruction.** Reconstruct `canonical_bytes` from the submitted fields. Reject if they don't match the submitted `canonical_bytes`.
+3. **Double-spend detection.** (Section 11.3.8)
+4. **Duplicate leaf rejection.** Compute `leaf_hash = H(0x00 || entry_bytes)` where `entry_bytes = canonical_bytes || BE64(log_timestamp)`. Reject if `leaf_hash` already exists in the tree.
+5. **Append.** Add the leaf to the Merkle tree. Update the root. Sign a new checkpoint.
+
+#### 11.3.7 Witnessed Checkpoints
+
+A checkpoint signed by a single log operator proves that operator's claim about the tree state. Witnessed checkpoints extend this to multi-party attestation.
+
+**Checkpoint binary format** (69 bytes, fixed):
+
+```
+"tessera-checkpoint-v1" (21 bytes) || BE64(log_size) || root (32 bytes) || BE64(timestamp)
+```
+
+The operator signs these 69 bytes with Ed25519. Witnesses countersign the exact same bytes.
+
+**Witness protocol:**
+
+1. After appending one or more entries, the log operator signs a checkpoint.
+2. The operator sends the checkpoint to each configured peer:
+   ```
+   POST /v1/internal/witness
+   { "checkpoint": { "root": "hex64", "log_size": uint64, "timestamp": uint64 },
+     "operator_key": "hex64", "operator_signature": "hex128" }
+   ```
+3. The peer verifies:
+   - The `operator_signature` is valid for `operator_key` over the checkpoint bytes.
+   - `log_size` is greater than or equal to the last witnessed `log_size` for this operator (no rollback).
+4. If valid, the peer countersigns the same 69 checkpoint bytes and returns:
+   ```
+   { "witness_key": "hex64", "witness_signature": "hex128" }
+   ```
+5. The operator collects witness signatures and includes them in the checkpoint response.
+
+**Witness threshold.** A log operator configures a witness threshold (e.g. 2-of-3). A checkpoint is "fully witnessed" when the threshold is met. The threshold is an operator parameter, not a protocol constant. A log with `threshold = 0` operates without witnessing.
+
+**Rollback detection.** A witness MUST reject a checkpoint if `log_size` is strictly less than the last `log_size` it witnessed for that operator. This prevents a malicious log from truncating its tree to erase transfers. Equal `log_size` with a different root is also rejected (fork detection).
+
+#### 11.3.8 Double-Spend Detection
 
 Before accepting a transfer, a log checks:
 1. Has this `receipt_id` been transferred before in this log?
 2. If yes, does the stored `to_key` (from the previous transfer) match the new `from_key`?
 3. If not, reject: double-spend detected.
 
-### 11.5 Consistency Checking
+A double-spend attempt that goes to two different logs is detected at verification time: a verifier queries multiple logs for the current owner of a receipt (Section 11.3.9). If the logs disagree, a double-spend has occurred.
 
-A verifier queries multiple logs for the current owner of a receipt. If all logs agree, the ownership is consistent. If logs disagree, a potential double-spend has occurred.
+#### 11.3.9 Cross-Log Consistency Verification
 
-### 11.6 Confirmation Semantics
+A verifier queries multiple logs for the current owner of a `receipt_id`. Three outcomes:
 
-High-value transactions wait for multiple log confirmations (analogous to Bitcoin confirmations but measured in seconds, since append is O(1)). Low-value transactions can accept single-log confirmation because the risk is bounded by the transaction value. The buyer chooses their own threshold.
+1. **All logs agree.** Ownership is consistent. Confidence scales with the number of logs queried and the independence of their operators.
+2. **Some logs have no record.** The receipt was not submitted to those logs. Not a conflict — the submitter chose fewer logs. The verifier trusts only the logs that have records, weighted by their witness status.
+3. **Logs disagree on owner.** A double-spend has occurred. The conflicting transfer records are public evidence. Both logs have signed checkpoints proving they accepted different transfers. The double-spender's identity (`from_key` appears in both conflicting records) is cryptographically proven. Their effective stake (Section 12.1) drops to zero.
+
+#### 11.3.10 Confirmation Semantics
+
+A submitter chooses their confirmation threshold based on transaction value:
+
+| Transaction value | Suggested threshold | Rationale |
+|---|---|---|
+| Low (< 100 units) | 1 log | Risk bounded by value. Speed matters more. |
+| Medium (100–10,000) | 2-of-3 logs | Balance of speed and safety. |
+| High (> 10,000) | 3-of-5 logs, fully witnessed | Maximum assurance. |
+
+These are recommendations, not protocol rules. The buyer always decides. Confirmations are fast (seconds, not minutes) because log append is O(1) — there is no proof-of-work delay.
+
+#### 11.3.11 Log Synchronisation
+
+Logs do NOT replicate each other's state. Each log is an independent record of the submissions it has received. Two logs that receive the same transfer will have the same ownership result but different Merkle trees (because `log_timestamp` differs, and entry ordering may differ).
+
+This is by design. Full replication would require consensus (the thing this protocol avoids). Instead, consistency emerges from verifiers querying multiple independent logs — the same principle as Certificate Transparency.
+
+A log MAY offer a feed of recent entries for monitoring purposes, but this is not required by the protocol.
+
+#### 11.3.12 Log Operator Incentives
+
+A log operator benefits from running a log in three ways:
+
+1. **Transaction fees.** A log MAY charge a fee per submission. The fee is negotiated out-of-band (pricing page, API key tiers, etc.). The protocol does not define fee structure.
+2. **Trust quotient visibility.** Agents prefer submitting to well-witnessed logs. A log operator with more peers and higher uptime attracts more submissions, increasing fee revenue.
+3. **Network participation.** An agent that also operates a log can submit its own transfers at zero cost and gains direct visibility into the network's transfer activity.
+
+The protocol does not mandate that logs charge fees. A log operator who runs a log for their own agents' transfers (self-hosting) needs no external revenue.
+
+#### 11.3.13 Liveness
+
+The protocol is available as long as at least one log is reachable. There is no minimum network size. A single log provides weaker trust guarantees but full functionality. The network degrades gracefully — losing a log reduces redundancy but does not halt the system.
 
 ---
 
