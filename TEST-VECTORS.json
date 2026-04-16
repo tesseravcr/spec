@@ -362,7 +362,7 @@
       }
     },
     "receipt_with_extensions": {
-      "description": "A root receipt with two extensions populated. Exercises the non-empty extensions list serialisation path.",
+      "description": "Receipt with two populated extensions \u2014 exercises non-empty extensions list serialisation",
       "inputs": {
         "schema_version": 1,
         "model_id": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -400,10 +400,210 @@
         "canonical_bytes_length": 357,
         "receipt_id": "295e3b492f2bab536c018d26605a3985e8d076351168f00266d650fee072b246",
         "signature": "TPyyzQoDMha+rJfZ5PTdYb4l7hRxkzTSP83NBCsHL79FO+8grF0h/SJxWRJQKlFi9BFEXHq/HPXLnywGK5SIAg==",
-        "signature_valid": true,
-        "extension_0_canonical_hex": "000000086d657461646174610000000c6167656e742d76312e322e30",
-        "extension_1_canonical_hex": "0000000a6361706162696c6974790000000f746578742d67656e65726174696f6e",
-        "note": "Extensions add 46 bytes to canonical form vs the equivalent receipt with empty extensions list. The receipt_id differs from an otherwise identical receipt without extensions."
+        "signature_valid": true
+      }
+    },
+    "merkle": {
+      "hash_leaf": {
+        "description": "H(0x00 || data) for various inputs",
+        "cases": [
+          {
+            "input_hex": "7472616e736665722d7265636f72642d616c706861",
+            "expected_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d"
+          },
+          {
+            "input_hex": "7472616e736665722d7265636f72642d62657461",
+            "expected_hex": "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a"
+          },
+          {
+            "input_hex": "7472616e736665722d7265636f72642d67616d6d61",
+            "expected_hex": "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d"
+          },
+          {
+            "input_hex": "7472616e736665722d7265636f72642d64656c7461",
+            "expected_hex": "2af5e8afb24cd81fdfbec7913aa9995d1e59df9e79eca22c9ae56d5df6f1addb"
+          },
+          {
+            "input_hex": "7472616e736665722d7265636f72642d657073696c6f6e",
+            "expected_hex": "acb0e5c6911c2929351c07e2c51f2c9e674d8f8d0b91b92bd6f4f1b7c1da291b"
+          },
+          {
+            "input_hex": "",
+            "expected_hex": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d"
+          }
+        ]
+      },
+      "hash_pair": {
+        "description": "H(0x01 || left || right)",
+        "cases": [
+          {
+            "left_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "right_hex": "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+            "expected_hex": "86aa15b654cba161e9db9ae8b15055fca77fa9278dd6f09524d8b86f28c6e68d"
+          },
+          {
+            "left_hex": "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+            "right_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "expected_hex": "b3961b1d7335bf06fa4a1747c28887ae2a0cfdc0d3f61d7699ba991b68a3e2c9",
+            "note": "Order matters — not commutative"
+          }
+        ]
+      },
+      "compute_root": {
+        "description": "Merkle root from leaf hashes with odd-node duplication",
+        "cases": [
+          {
+            "leaf_count": 0,
+            "leaf_hashes_hex": [],
+            "expected_root_hex": "2e1cfa82b035c26cbbbdae632cea070514eb8b773f616aaeaf668e2f0be8f10d",
+            "note": "Empty tree: H(\"empty\")"
+          },
+          {
+            "leaf_count": 1,
+            "leaf_hashes_hex": [
+              "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d"
+            ],
+            "expected_root_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "note": "Single leaf is root"
+          },
+          {
+            "leaf_count": 2,
+            "leaf_hashes_hex": [
+              "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+              "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a"
+            ],
+            "expected_root_hex": "86aa15b654cba161e9db9ae8b15055fca77fa9278dd6f09524d8b86f28c6e68d"
+          },
+          {
+            "leaf_count": 3,
+            "leaf_hashes_hex": [
+              "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+              "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+              "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d"
+            ],
+            "expected_root_hex": "e98a3bb6623478d828b28c5f8cdf1fbf7799f4cb8c5ec3c9e486f0b8a9f9110d",
+            "note": "Odd: third leaf duplicated"
+          },
+          {
+            "leaf_count": 4,
+            "leaf_hashes_hex": [
+              "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+              "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+              "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d",
+              "2af5e8afb24cd81fdfbec7913aa9995d1e59df9e79eca22c9ae56d5df6f1addb"
+            ],
+            "expected_root_hex": "4f1d5a19635d425741f0fe42c4ad6d45dd115341ca50a75102e1464a21c3905a"
+          },
+          {
+            "leaf_count": 5,
+            "leaf_hashes_hex": [
+              "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+              "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+              "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d",
+              "2af5e8afb24cd81fdfbec7913aa9995d1e59df9e79eca22c9ae56d5df6f1addb",
+              "acb0e5c6911c2929351c07e2c51f2c9e674d8f8d0b91b92bd6f4f1b7c1da291b"
+            ],
+            "expected_root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "note": "Odd at leaf level — tests duplication at multiple levels"
+          }
+        ]
+      },
+      "inclusion_proofs": {
+        "description": "Merkle inclusion proofs: build + verify for various trees and indices",
+        "cases": [
+          {
+            "leaf_count": 5,
+            "root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "index": 0,
+            "leaf_hash_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "path": [
+              {"sibling_hex": "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a", "direction": "right"},
+              {"sibling_hex": "a47dd98486e949b762eedca0e8412378020dc1000357d82e84aada9d3697e2d7", "direction": "right"},
+              {"sibling_hex": "32f1ab9e7c973d816c60a11cadf04199f8240c16678aafedba6fa3a960a1321d", "direction": "right"}
+            ],
+            "verified": true
+          },
+          {
+            "leaf_count": 5,
+            "root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "index": 1,
+            "leaf_hash_hex": "78b6bd995163ce9e8b8bc60f8ad6a3edc8b233ea4cf4abdd7e0e69bef540fe5a",
+            "path": [
+              {"sibling_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d", "direction": "left"},
+              {"sibling_hex": "a47dd98486e949b762eedca0e8412378020dc1000357d82e84aada9d3697e2d7", "direction": "right"},
+              {"sibling_hex": "32f1ab9e7c973d816c60a11cadf04199f8240c16678aafedba6fa3a960a1321d", "direction": "right"}
+            ],
+            "verified": true
+          },
+          {
+            "leaf_count": 5,
+            "root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "index": 2,
+            "leaf_hash_hex": "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d",
+            "path": [
+              {"sibling_hex": "2af5e8afb24cd81fdfbec7913aa9995d1e59df9e79eca22c9ae56d5df6f1addb", "direction": "right"},
+              {"sibling_hex": "86aa15b654cba161e9db9ae8b15055fca77fa9278dd6f09524d8b86f28c6e68d", "direction": "left"},
+              {"sibling_hex": "32f1ab9e7c973d816c60a11cadf04199f8240c16678aafedba6fa3a960a1321d", "direction": "right"}
+            ],
+            "verified": true
+          },
+          {
+            "leaf_count": 5,
+            "root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "index": 3,
+            "leaf_hash_hex": "2af5e8afb24cd81fdfbec7913aa9995d1e59df9e79eca22c9ae56d5df6f1addb",
+            "path": [
+              {"sibling_hex": "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d", "direction": "left"},
+              {"sibling_hex": "86aa15b654cba161e9db9ae8b15055fca77fa9278dd6f09524d8b86f28c6e68d", "direction": "left"},
+              {"sibling_hex": "32f1ab9e7c973d816c60a11cadf04199f8240c16678aafedba6fa3a960a1321d", "direction": "right"}
+            ],
+            "verified": true
+          },
+          {
+            "leaf_count": 5,
+            "root_hex": "e3110b30bb8de37f2e06b2626d40d5b32abd9d83773c7354ed3d6273a77d479d",
+            "index": 4,
+            "leaf_hash_hex": "acb0e5c6911c2929351c07e2c51f2c9e674d8f8d0b91b92bd6f4f1b7c1da291b",
+            "path": [
+              {"sibling_hex": "acb0e5c6911c2929351c07e2c51f2c9e674d8f8d0b91b92bd6f4f1b7c1da291b", "direction": "right"},
+              {"sibling_hex": "53ee5c91eaafb361644181197fd106f73ef133d3061254466ef7c4d784ec785c", "direction": "right"},
+              {"sibling_hex": "4f1d5a19635d425741f0fe42c4ad6d45dd115341ca50a75102e1464a21c3905a", "direction": "left"}
+            ],
+            "verified": true
+          },
+          {
+            "leaf_count": 3,
+            "root_hex": "e98a3bb6623478d828b28c5f8cdf1fbf7799f4cb8c5ec3c9e486f0b8a9f9110d",
+            "index": 2,
+            "leaf_hash_hex": "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d",
+            "path": [
+              {"sibling_hex": "bba98b82059e08b476dd2293c68034c8c6d0611a830cbc6ea25e1df72969310d", "direction": "right"},
+              {"sibling_hex": "86aa15b654cba161e9db9ae8b15055fca77fa9278dd6f09524d8b86f28c6e68d", "direction": "left"}
+            ],
+            "verified": true,
+            "note": "Index 2 of 3-leaf tree — this leaf gets duplicated"
+          },
+          {
+            "leaf_count": 1,
+            "root_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "index": 0,
+            "leaf_hash_hex": "1e841c4865f066b98a6e7517731a12348276a39c4d2c1e6f55a8c55ac0873f8d",
+            "path": [],
+            "verified": true,
+            "note": "Single leaf — empty proof path"
+          }
+        ]
+      },
+      "entry_bytes": {
+        "description": "entry_bytes = canonical_bytes || BE64(log_timestamp), then leaf_hash",
+        "cases": [
+          {
+            "transfer_canonical_hex": "deadbeef01020304",
+            "log_timestamp": 1714500123,
+            "entry_bytes_hex": "deadbeef01020304000000006631321b",
+            "leaf_hash_hex": "dbf17f041e64ce7b4aee6a53970f75d6d4c4974f19283bcc86412910bfc0d39f"
+          }
+        ]
       }
     }
   }
