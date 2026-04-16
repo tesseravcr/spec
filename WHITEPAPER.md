@@ -50,7 +50,7 @@ No token. No blockchain. Just a data structure with enough fields to make verifi
 
 The protocol is backend-agnostic. The VCR wraps a proof but does not care how it was generated. ZK proof, TEE attestation, it does not matter. The schema is indifferent. The implementation demonstrates both.
 
-Each VCR is self-contained. It carries everything a stranger needs to verify the computation and assess its value, with no external lookups beyond the model's verification key.
+Each VCR is self-contained. It carries everything a stranger needs to verify the computation and assess its value, with no external lookups beyond the model's verification key (see Spec Section 7.5 for retrieval options).
 
 VCRs are hash-linked. They reference parents by hash, forming a DAG. Modify any receipt and all descendants break.
 
